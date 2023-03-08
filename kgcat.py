@@ -6,6 +6,7 @@ import socket
 import signal
 import subprocess
 import shlex
+#import ssl
 
 
 
@@ -44,6 +45,16 @@ class KyCat:
     def __init__(self, args, buffer=None):
         self.args = args
         #self.buffer = buffer
+        #if self.args.https:
+            #sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            #My_SSLcontext = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+            #My_SSLcontext.load_default_certs(purpose=ssl.Purpose.SERVER_AUTH)
+            #context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+            #context.load_verify_locations('/home/SSL/9368040_ky9oss.top.pem')
+            #hostname = 'ky9oss.top'
+            #self.socket = My_SSLcontext.wrap_socket(sock=sock,server_hostname=hostname, do_handshake_on_connect=True)
+            #print('注意，已使用HTTPS')
+        #else:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # 多次调用同一socket发数据时，若两次调用间隔时间太短，并且前一次调用的应答时间太长，会造成端口被占用的假象，使用下面这行代码会告诉内核重用处于等待状态的socket，无需等待应答。  
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -58,6 +69,7 @@ class KyCat:
                 self.Ksend()
         except (KeyboardInterrupt, BrokenPipeError):
             print('[*] 已关闭，再见！')
+            sys.exit()
 
     # 监听程序
     def Klisten(self):
@@ -101,7 +113,10 @@ class KyCat:
                     if not cmd:
                         return #啥都不干
                     output = subprocess.check_output(shlex.split(cmd), stderr=subprocess.STDOUT) #记住这行，subprocess.check_ouput在命令行执行一条命令并返回其输出。shlex.split以Unix命令行格式改变cmd的格式，stderr=subprocess.STDOUT会在命令执行错误时返回错误信息
-                    return output.decode()
+                    if output:
+                        return output.decode()
+                    else:
+                        return 'Done!'
 
 
                 while True:
@@ -121,6 +136,7 @@ class KyCat:
                             client.send(b'\n'+response.encode())
                     except Exception as e:
                         print(f'Wrong!{e}')
+                        client.send(b'[!!] Wrong command!')
 
 
         #文件接收
@@ -273,6 +289,7 @@ if __name__ == '__main__':
     myparser.add_argument('-u', '--udp', action='store_true', help='send UDP message')
     myparser.add_argument('-l', '--listen', action='store_true', help='listen in your port')
     myparser.add_argument('-rf', '--receiveFile', help='receive file in listening')
+    #myparser.add_argument('-hs', '--https', action='store_true', help='send https message')
     args = myparser.parse_args() #args是命名空间，这行命令将用户输入的参数去掉双杠后作为命名空间的属性
     #if args.listen:
     #    buffer = ''
